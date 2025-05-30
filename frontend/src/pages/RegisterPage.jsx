@@ -1,17 +1,15 @@
-// src/pages/RegisterPage.jsx
-import { useState } from "react";
-import { Auth } from "aws-amplify";
-import { useNavigate } from "react-router-dom";
+import React, { useState } from 'react';
+import { Auth } from 'aws-amplify';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-    nickname: "",
+    email: '',
+    password: '',
+    name: '', 
+    nickname: '',
   });
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -20,42 +18,34 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
-    try {
-      const { email, password, nickname } = formData;
+    setMsg('');
+    setLoading(true);
 
+    try {
+      const { email, password, name, nickname } = formData;
       const result = await Auth.signUp({
         username: email,
         password,
         attributes: {
           email,
-          name: nickname, // Cognito 預設支援的屬性
+          name: name,      // 你可以把它當作真名用
+          nickname: nickname,  // 另外也寫入 nickname 欄位
         },
       });
 
-      console.log("註冊成功", result);
-      setSuccess("註冊成功，請至信箱收取驗證信！");
-      // 可以選擇導向登入頁
-      // navigate('/login')
+      setMsg('註冊成功，請到信箱收驗證信並確認帳號。');
     } catch (err) {
-      console.error("註冊失敗", err);
-      setError(err.message || "發生錯誤，請再試一次");
+      console.error(err);
+      setMsg(err.message || '註冊失敗');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-md mx-auto p-4">
-      <h2 className="text-xl font-bold mb-4">註冊帳號</h2>
+    <div className="max-w-md mx-auto mt-12 p-4 border rounded shadow">
+      <h2 className="text-xl font-bold mb-4">註冊新帳號</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <input
-          type="text"
-          name="nickname"
-          value={formData.nickname}
-          onChange={handleChange}
-          placeholder="暱稱"
-          className="w-full border p-2"
-        />
         <input
           type="email"
           name="email"
@@ -63,25 +53,44 @@ export default function RegisterPage() {
           onChange={handleChange}
           placeholder="Email"
           className="w-full border p-2"
+          required
         />
         <input
           type="password"
           name="password"
           value={formData.password}
           onChange={handleChange}
-          placeholder="密碼（至少 6 位數）"
+          placeholder="密碼"
           className="w-full border p-2"
+          required
+        />
+        <input
+          type="text"
+          name="name"
+          value={formData.name}
+          onChange={handleChange}
+          placeholder="本名"
+          className="w-full border p-2"
+          required
+        />
+        <input
+          type="text"
+          name="nickname"
+          value={formData.nickname}
+          onChange={handleChange}
+          placeholder="暱稱"
+          className="w-full border p-2"
+          required
         />
         <button
           type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded"
+          disabled={loading}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
         >
-          註冊
+          {loading ? '註冊中...' : '註冊'}
         </button>
+        {msg && <p className="text-sm mt-2 text-gray-700">{msg}</p>}
       </form>
-
-      {error && <p className="text-red-500 mt-2">{error}</p>}
-      {success && <p className="text-green-600 mt-2">{success}</p>}
     </div>
   );
 }

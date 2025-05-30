@@ -1,55 +1,72 @@
-import React, { useState } from "react";
-import { Auth } from "aws-amplify";
-import { useNavigate } from "react-router-dom";
+import React, { useState } from 'react';
+import { Auth } from 'aws-amplify';
+import { useNavigate } from 'react-router-dom';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState('');
   const navigate = useNavigate();
-  const [error, setError] = useState("");
 
-  const handleLogin = async (e) => {
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
+    setMsg('');
+    setLoading(true);
 
     try {
-      const user = await Auth.signIn(email, password);
-      console.log("✅ 登入成功", user);
-      navigate("/profile"); // 登入成功導向
+      const { email, password } = formData;
+      const result = await Auth.signIn(email, password);
+      console.log("登入成功：", result);
+
+      setMsg('登入成功！即將導向個人資料頁面...');
+      setTimeout(() => {
+        navigate('/profile'); // 成功後跳轉
+      }, 1000);
     } catch (err) {
-      console.error("❌ 登入失敗", err);
-      setError("登入失敗，請確認帳號密碼");
+      console.error(err);
+      setMsg(err.message || '登入失敗');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-md mx-auto mt-20 p-4 border shadow">
-      <h2 className="text-2xl font-bold mb-4">登入</h2>
-      <form onSubmit={handleLogin} className="space-y-4">
+    <div className="max-w-md mx-auto mt-12 p-4 border rounded shadow">
+      <h2 className="text-xl font-bold mb-4">登入</h2>
+      <form onSubmit={handleSubmit} className="space-y-4">
         <input
           type="email"
+          name="email"
+          value={formData.email}
+          onChange={handleChange}
           placeholder="Email"
           className="w-full border p-2"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
           required
         />
         <input
           type="password"
+          name="password"
+          value={formData.password}
+          onChange={handleChange}
           placeholder="密碼"
           className="w-full border p-2"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
           required
         />
-        {error && <p className="text-red-600">{error}</p>}
         <button
           type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          disabled={loading}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
         >
-          登入
+          {loading ? '登入中...' : '登入'}
         </button>
+        {msg && <p className="text-sm mt-2 text-gray-700">{msg}</p>}
       </form>
     </div>
   );
 }
+

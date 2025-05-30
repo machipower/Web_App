@@ -4,9 +4,9 @@ import App from './App.jsx'
 import './index.css'
 import { BrowserRouter } from 'react-router-dom'
 import { Amplify } from 'aws-amplify'
-import awsExports from './aws-exports' 
+import awsmobile from './aws-exports' 
 
-Amplify.configure(awsExports)
+Amplify.configure(awsmobile);
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
