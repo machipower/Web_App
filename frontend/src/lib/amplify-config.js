@@ -1,3 +1,6 @@
+import { defineData, generateClient } from "aws-amplify/data";
+
+// ✅ Auth 設定（可供 Amplify.configure 使用）
 export const amplifyConfig = {
   Auth: {
     region: "ap-southeast-2",
@@ -6,10 +9,8 @@ export const amplifyConfig = {
   },
 };
 
-import { defineData } from "aws-amplify/data";
-import { createClient } from "aws-amplify/data";
-
-export const client = createClient(defineData({
+// ✅ define schema + 產生 client（for資料操作）
+const schema = defineData({
   models: {
     UserProfile: {
       fields: {
@@ -24,4 +25,6 @@ export const client = createClient(defineData({
       primaryKey: "userId",
     },
   },
-}));
+});
+
+export const client = generateClient({ schema });
