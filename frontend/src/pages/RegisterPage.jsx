@@ -1,15 +1,21 @@
-import React, { useState } from 'react';
-import { Auth } from 'aws-amplify';
+import React, { useState } from "react";
+import { signUp } from "@aws-amplify/auth";
+import { configure } from "@aws-amplify/core";
+import { amplifyConfig } from "../lib/amplify-config";
+
+// 初始化 Amplify（只需執行一次）
+configure(amplifyConfig);
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    name: '', 
-    nickname: '',
+    email: "",
+    password: "",
+    name: "",
+    nickname: "",
   });
+
   const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState('');
+  const [msg, setMsg] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -18,25 +24,29 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setMsg('');
+    setMsg("");
     setLoading(true);
 
     try {
       const { email, password, name, nickname } = formData;
-      const result = await Auth.signUp({
+
+      const result = await signUp({
         username: email,
         password,
-        attributes: {
-          email,
-          name: name,      // 你可以把它當作真名用
-          nickname: nickname,  // 另外也寫入 nickname 欄位
+        options: {
+          userAttributes: {
+            email,
+            name,
+            nickname,
+          },
         },
       });
 
-      setMsg('註冊成功，請到信箱收驗證信並確認帳號。');
+      console.log("註冊結果：", result);
+      setMsg("✅ 註冊成功，請至信箱驗證帳號。");
     } catch (err) {
-      console.error(err);
-      setMsg(err.message || '註冊失敗');
+      console.error("註冊錯誤：", err);
+      setMsg(err.message || "註冊失敗");
     } finally {
       setLoading(false);
     }
@@ -87,7 +97,7 @@ export default function RegisterPage() {
           disabled={loading}
           className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
         >
-          {loading ? '註冊中...' : '註冊'}
+          {loading ? "註冊中..." : "註冊"}
         </button>
         {msg && <p className="text-sm mt-2 text-gray-700">{msg}</p>}
       </form>

@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
-import { Auth } from "aws-amplify";
-import awsconfig from '../aws-exports';
-
-import { uploadToS3 } from '../utils/uploadToS3';
-import { Amplify } from "aws-amplify";
-Amplify.configure(awsconfig);
+import { getCurrentUser } from "aws-amplify/auth";
+import { uploadData } from "aws-amplify/storage";
+import { generateClient } from "aws-amplify/data";
+import { client } from "../lib/amplify-config";
 
 // ✅ 技能清單（範例）
 const SKILL_OPTIONS = ["Frontend", "Backend", "Data", "Design", "Marketing"];
@@ -21,17 +19,17 @@ export default function ProfilePage() {
 
   const [userId, setUserId] = useState("");
 
+  // ✅ 取得目前使用者資訊
   useEffect(() => {
-    Auth.currentAuthenticatedUser()
-      .then(user => {
-        setUserId(user.attributes.sub); // sub 是 Cognito 中唯一識別 ID
+    getCurrentUser()
+      .then((user) => {
+        setUserId(user.userId);
       })
-      .catch(err => {
+      .catch((err) => {
         console.error("尚未登入或取得 userId 失敗：", err);
       });
   }, []);
 
-  // ✅ 處理文字與多選輸入
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -40,7 +38,6 @@ export default function ProfilePage() {
     }));
   };
 
-  // ✅ 處理技能 checkbox
   const handleSkillToggle = (skill) => {
     setFormData((prev) => {
       const newSkills = prev.skills.includes(skill)
@@ -50,7 +47,6 @@ export default function ProfilePage() {
     });
   };
 
-  // ✅ 處理檔案上傳
   const handleFileChange = (e) => {
     const { name, files } = e.target;
     setFormData((prev) => ({
@@ -59,7 +55,6 @@ export default function ProfilePage() {
     }));
   };
 
-  // ✅ 送出資料
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -67,11 +62,16 @@ export default function ProfilePage() {
       let resumeURL = "";
 
       if (formData.resume) {
-        resumeURL = await uploadToS3(formData.resume, userId, "resume");
+        const { key } = await uploadData({
+          key: `resumes/${userId}-${formData.resume.name}`,
+          data: formData.resume,
+        }).result;
+
+        resumeURL = key;
       }
 
-      const userPayload = {
-        userId, // ← 從 Cognito 取得的 sub
+      const payload = {
+        userId,
         nickname: formData.nickname,
         major: formData.major,
         skills: formData.skills,
@@ -80,9 +80,9 @@ export default function ProfilePage() {
         portfolioURL: formData.portfolioURL,
       };
 
-      console.log("要儲存的使用者資料：", userPayload);
-
-      // 🔜 可整合儲存到 DynamoDB
+      const db = generateClient(client);
+      await db.models.UserProfile.create(payload);
+      console.log("✅ 資料成功寫入 DynamoDB！");
     } catch (err) {
       console.error("上傳或儲存失敗：", err);
     }

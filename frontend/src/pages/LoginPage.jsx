@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Auth } from 'aws-amplify';
+import { signIn } from 'aws-amplify/auth';
 import { useNavigate } from 'react-router-dom';
 
 export default function LoginPage() {
@@ -20,7 +20,7 @@ export default function LoginPage() {
 
     try {
       const { email, password } = formData;
-      const result = await Auth.signIn(email, password);
+      const result = await signIn({ username: email, password });
       console.log("登入成功：", result);
 
       setMsg('登入成功！即將導向個人資料頁面...');
